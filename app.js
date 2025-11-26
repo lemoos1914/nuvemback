@@ -25,6 +25,9 @@ app.use(morgan('combined'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// Servir arquivos estáticos (CSS, HTML etc)
+app.use(express.static(__dirname));
+
 // Supabase Client
 const supabase = supabaseClient.createClient(
     'https://vucskwivifykvctcplop.supabase.co',
@@ -35,7 +38,7 @@ const supabase = supabaseClient.createClient(
 // ROUTES
 // ========================================================================
 
-// GET ALL PRODUCTS
+// GET ALL PRODUCTS (JSON)
 app.get('/products', async (req, res) => {
     const { data, error } = await supabase
         .from('products')
@@ -46,19 +49,106 @@ app.get('/products', async (req, res) => {
     res.json(data);
 });
 
-// GET PRODUCT BY ID
+// ========================================================================
+// 🔥 GET PRODUCT BY ID — HTML bonito + JSON se for API
+// ========================================================================
 app.get('/products/:id', async (req, res) => {
     const id = req.params.id;
 
-    const { data, error } = await supabase
+    const { data: product, error } = await supabase
         .from('products')
         .select('*')
         .eq('id', id)
-        .single(); // garante que vem só 1 objeto
+        .single();
 
-    if (error) return res.status(400).json(error);
+    if (error || !product) {
+        return res.status(404).send(`
+            <h1 style="text-align:center; margin-top:40px;">Produto não encontrado</h1>
+        `);
+    }
 
-    res.json(data);
+    // Se o cliente pedir JSON, retornar JSON normal
+    if (req.headers.accept && req.headers.accept.includes("application/json")) {
+        return res.json(product);
+    }
+
+    // Caso contrário, retornar HTML estilizado
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+          <meta charset="UTF-8">
+          <title>Produto ${product.id}</title>
+          <link rel="stylesheet" href="/style.css">
+          <style>
+              body {
+                  font-family: Arial, sans-serif;
+                  background: #f5f5f5;
+                  padding: 40px;
+              }
+
+              .product-page {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+              }
+
+              .product-card {
+                background: white;
+                width: 360px;
+                padding: 25px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                text-align: center;
+              }
+
+              .product-card h2 {
+                margin-bottom: 10px;
+                font-size: 24px;
+              }
+
+              .product-description {
+                font-size: 16px;
+                color: #555;
+                margin-bottom: 15px;
+              }
+
+              .product-price {
+                font-size: 18px;
+                font-weight: bold;
+                color: green;
+              }
+
+              .back-button {
+                margin-top: 20px;
+                text-decoration: none;
+                padding: 10px 20px;
+                background: #444;
+                color: white;
+                border-radius: 8px;
+                transition: 0.2s;
+              }
+
+              .back-button:hover {
+                background: black;
+              }
+          </style>
+      </head>
+
+      <body>
+        <div class="product-page">
+          <div class="product-card">
+            <h2>${product.name}</h2>
+            <p class="product-description">${product.description}</p>
+            <p class="product-price">Preço: R$ ${Number(product.price).toFixed(2)}</p>
+          </div>
+
+          <a class="back-button" href="/">Voltar</a>
+        </div>
+      </body>
+      </html>
+    `);
 });
 
 // CREATE PRODUCT (POST)
@@ -68,7 +158,7 @@ app.post('/products', async (req, res) => {
     const { data, error } = await supabase
         .from('products')
         .insert({ name, description, price })
-        .select(); // retorna o novo produto
+        .select();
 
     if (error) return res.status(400).json(error);
 
@@ -94,7 +184,7 @@ app.patch('/products/:id', async (req, res) => {
     res.json(data[0]);
 });
 
-// UPDATE (PUT) – fallback do frontend
+// UPDATE (PUT)
 app.put('/products/:id', async (req, res) => {
     const id = req.params.id;
 
@@ -124,7 +214,7 @@ app.delete('/products/:id', async (req, res) => {
 
     if (error) return res.status(400).json(error);
 
-    res.status(204).send(); // sem corpo (correto p/ DELETE)
+    res.status(204).send();
 });
 
 // ROOT
@@ -134,5 +224,5 @@ app.get('/', (req, res) => {
 
 // START SERVER
 app.listen(3000, () => {
-    console.log(`> Server running at http://13.222.132.43:3000`);
+    console.log(`> Server running at http://localhost:3000`);
 });

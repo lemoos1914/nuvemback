@@ -224,5 +224,5 @@ app.get('/', (req, res) => {
 
 // START SERVER
 app.listen(3000, () => {
-    console.log(`> Server running at http://localhost:3000`);
+    console.log(`> Server running at http://13.222.132.43:3000`);
 });

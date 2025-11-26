@@ -111,5 +111,5 @@ app.get('/', (req, res) => {
 //});
 
 app.listen(3000, () => {
-    console.log(`> Ready on http://44.211.117.156:3000`);
+    console.log(`> Ready on http://13.222.132.43:3000`);
 });
